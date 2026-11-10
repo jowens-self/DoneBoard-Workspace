@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Required for the Mac App Store, and good practice for Developer ID. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+
+	<!-- The sync folder is chosen by the user through NSOpenPanel. Without this,
+	     the picked folder is unreadable the moment the panel closes. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+
+	<!-- App-scoped bookmarks are what let that folder permission survive a
+	     relaunch. A bare path does not, inside a sandbox. -->
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
+</dict>
+</plist>

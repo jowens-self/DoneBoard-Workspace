@@ -1,0 +1,4 @@
+build/
+build-ios/
+DoneBoard.xcodeproj/
+.DS_Store

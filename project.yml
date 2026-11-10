@@ -1,0 +1,122 @@
+# XcodeGen spec for DoneBoard.
+#
+# The hand-rolled build.sh and build-ios.sh still work and are still the fast
+# path for local development. This file exists for the two things they cannot
+# do: submit to the App Store, and run on a physical iPhone. Both need a real
+# Xcode project and a signing identity.
+#
+#   brew install xcodegen
+#   xcodegen generate
+#   open DoneBoard.xcodeproj
+#
+# The generated .xcodeproj is build output, not source - it is gitignored.
+# Change this file, regenerate, never hand-edit the project.
+
+name: DoneBoard
+
+options:
+  bundleIdPrefix: com.example
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    # The team the phone builds are signed with - put your own team ID here. It has to live
+    # here: the project is regenerated from this file, so a team picked in Xcode's Signing tab
+    # is thrown away by the next `xcodegen generate` and device builds stop signing.
+    DEVELOPMENT_TEAM: ""
+    GENERATE_INFOPLIST_FILE: false
+
+targets:
+
+  DoneBoard-macOS:
+    type: application
+    platform: macOS
+    settings:
+      base:
+        PRODUCT_NAME: DoneBoard
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.doneboard
+        INFOPLIST_FILE: Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/DoneBoard.entitlements
+        # Required for notarization when distributing outside the App Store.
+        ENABLE_HARDENED_RUNTIME: true
+        COMBINE_HIDPI_IMAGES: true
+        # The commit stamp reads .git and writes the built Info.plist.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    sources:
+      - path: Sources/Shared
+      - path: Sources/Mac
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+      - path: Resources/Sounds
+        buildPhase: resources
+        excludes:
+          - "*.md"
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    postBuildScripts:
+      # Before signing, which Xcode always does last. See Tools/stamp-commit.sh.
+      - name: Stamp the commit
+        script: '"$SRCROOT/Tools/stamp-commit.sh" "$TARGET_BUILD_DIR/$INFOPLIST_PATH"'
+        basedOnDependencyAnalysis: false
+        # Naming the processed Info.plist as an input is what makes the build system run this
+        # after writing it. Without that the two ran in either order, and a build shipped unstamped.
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)
+
+  DoneBoard-iOS:
+    type: application
+    platform: iOS
+    settings:
+      base:
+        PRODUCT_NAME: DoneBoard
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.doneboard
+        INFOPLIST_FILE: Resources/Info-iOS.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # The commit stamp reads .git and writes the built Info.plist.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    sources:
+      - path: Sources/iOS
+      - path: Sources/Shared
+      - path: Resources/Assets.xcassets
+        buildPhase: resources
+      - path: Resources/Sounds
+        buildPhase: resources
+        excludes:
+          - "*.md"
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    postBuildScripts:
+      # Before signing, which Xcode always does last. See Tools/stamp-commit.sh.
+      - name: Stamp the commit
+        script: '"$SRCROOT/Tools/stamp-commit.sh" "$TARGET_BUILD_DIR/$INFOPLIST_PATH"'
+        basedOnDependencyAnalysis: false
+        # Naming the processed Info.plist as an input is what makes the build system run this
+        # after writing it. Without that the two ran in either order, and a build shipped unstamped.
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)
+
+schemes:
+  DoneBoard (Mac):
+    build:
+      targets:
+        DoneBoard-macOS: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  DoneBoard (iPhone):
+    build:
+      targets:
+        DoneBoard-iOS: all
+    run:
+      config: Debug
+    archive:
+      config: Release
